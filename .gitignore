@@ -1,0 +1,8 @@
+bin/
+.envrc
+.env
+tmp/
+./cmd/uploads/
+uploads/
+./uploads/
+/uploads/
