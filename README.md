@@ -4,7 +4,7 @@ Simple boilerplate for small SaaS projects using Go and Fiber to quickly setup a
 It includes:
 - Oauth login with Google
 - JWT Authentication
-- Lemonsqueezy API integration
+- Lemonsqueezy Webhook integration for payment processing
 - Database migrations with GORM
 - Safe environment variables using godotenv
 
