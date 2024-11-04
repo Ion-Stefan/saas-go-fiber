@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/Ion-Stefan/saas-go-fiber/config"
 	"github.com/Ion-Stefan/saas-go-fiber/internal/model"
@@ -54,26 +55,34 @@ func SetupOauthRoutes(app fiber.Router, oauthConf *oauth2.Config) {
 			return c.Status(fiber.StatusInternalServerError).SendString("Error unmarshal json body " + err.Error())
 		}
 
+		// Check if user exists
 		dbuser, err := service.GetUserByEmail(user.Email)
 		if err != nil {
-			return c.Redirect(fmt.Sprintf("%v/login-error", config.Envs.WebsiteURL))
+			log.Println("Error getting user by email, creating new user with emai: ", user.Email)
 		}
 
+		// If user does not exist, create a new user
 		if dbuser == nil {
 			newUser := model.User{
 				Email: user.Email,
 				Name:  user.Name,
 			}
 
+			// Create the user
 			createErr := service.CreateUser(&newUser)
 			if createErr != nil {
+				log.Println("Error creating user: ", createErr)
 				return c.Redirect(fmt.Sprintf("%v/login-error", config.Envs.WebsiteURL))
 			}
+
+			// Bundle the user data inside a JWT
 			jwt_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 				"user_id": newUser.ID,
 				"email":   newUser.Email,
 				"admin":   newUser.IsAdmin,
 			})
+
+			// Sign the token
 			tokenString, err := jwt_token.SignedString([]byte(config.Envs.JWTSecret))
 			if err != nil {
 				return c.Status(fiber.StatusInternalServerError).SendString("Error generating token: " + err.Error())
@@ -86,15 +95,13 @@ func SetupOauthRoutes(app fiber.Router, oauthConf *oauth2.Config) {
 			return c.Redirect(fmt.Sprintf("%v/homepage", config.Envs.WebsiteURL))
 
 		}
-		// Login the user
-		existingUser, err := service.GetUserByEmail(user.Email)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Error checking user: " + err.Error())
-		}
+
+		// If the user already exists, log in the user by
+    // bundling the user data inside a JWT
 		jwt_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"user_id": existingUser.ID,
-			"email":   existingUser.Email,
-			"admin":   existingUser.IsAdmin,
+			"user_id": dbuser.ID,
+			"email":   dbuser.Email,
+			"admin":   dbuser.IsAdmin,
 		})
 		tokenString, err := jwt_token.SignedString([]byte(config.Envs.JWTSecret))
 		if err != nil {

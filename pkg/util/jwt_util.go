@@ -8,7 +8,7 @@ import (
 
 func SetJWTInCookie(c *fiber.Ctx, tokenString string) {
 	c.Cookie(&fiber.Cookie{
-		Name:     "2four7-business-token",
+		Name:     "saas-go-fiber",
 		Value:    tokenString,
 		Path:     "/",                                 // Available across all paths
 		SameSite: "Lax",                               // Allows cookies to be sent with top-level navigations
